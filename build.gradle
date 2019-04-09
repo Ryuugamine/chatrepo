@@ -6,6 +6,9 @@ repositories {
     mavenCentral()
 }
 
+task stage(dependsOn: ['build', 'clean'])
+    build.mustRunAfter clean
+
 apply plugin: 'java'
 apply plugin: 'checkstyle'
 
