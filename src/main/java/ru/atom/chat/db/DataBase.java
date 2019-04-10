@@ -13,7 +13,6 @@ public class DataBase {
     private String msg;
 
     public DataBase() {
-        System.out.println("PostgreSQL JDBC Driver successfully connected");
         Connection connection = null;
 
         try {
@@ -23,8 +22,6 @@ public class DataBase {
             msg = "You successfully connected to database now";
 
         } catch (SQLException e) {
-            System.out.println("Connection Failed");
-            e.printStackTrace();
             msg = "So close";
         }
     }
