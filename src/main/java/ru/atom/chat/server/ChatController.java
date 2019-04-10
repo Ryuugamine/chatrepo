@@ -3,21 +3,19 @@ package ru.atom.chat.server;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import ru.atom.chat.db.DataBase;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 
-@Controller
+@RestController
 @RequestMapping("chat")
 public class ChatController {
     private List<String> messages = new ArrayList<>();
@@ -45,6 +43,17 @@ public class ChatController {
         messages.add("[" + name + "] logged in");
         return ResponseEntity.ok().build();
     }
+
+    @RequestMapping(
+            path = "test_db_creation",
+            method = RequestMethod.GET,
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public String testDb() {
+        DataBase db = new DataBase();
+
+        return db.getMsg();
+    }
+
 
     /**
      * curl -i localhost:8080/chat/online_list
