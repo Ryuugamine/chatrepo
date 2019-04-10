@@ -16,6 +16,17 @@ public class ChatClient {
     private static final String HOST = "localhost";
     private static final String PORT = ":8080";
 
+
+    public static Response testDb() throws IOException {
+        Request request = new Request.Builder()
+                .get()
+                .url(PROTOCOL + HOST + PORT + "/chat/test_db_creation")
+                .addHeader("host", HOST + PORT)
+                .build();
+
+        return client.newCall(request).execute();
+    }
+
     //POST host:port/chat/login?name=my_name
     public static Response login(String name) throws IOException {
         MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded");

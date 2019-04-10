@@ -47,7 +47,7 @@ public class ChatController {
     @RequestMapping(
             path = "test_db_creation",
             method = RequestMethod.GET,
-            consumes = MediaType.TEXT_PLAIN_VALUE)
+            produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> testDb() {
         DataBase db = new DataBase();
