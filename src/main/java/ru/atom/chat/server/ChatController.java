@@ -48,10 +48,11 @@ public class ChatController {
             path = "test_db_creation",
             method = RequestMethod.GET,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public String testDb() {
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<String> testDb() {
         DataBase db = new DataBase();
 
-        return db.getMsg();
+        return ResponseEntity.ok(db.getMsg());
     }
 
 
