@@ -1,14 +1,16 @@
 package ru.atom.chat.server;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
-import ru.atom.chat.db.DataBase;
+import ru.atom.chat.db.DatabaseConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @RestController
 @RequestMapping("chat")
 public class ChatController {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     private List<String> messages = new ArrayList<>();
     private Map<String, String> usersOnline = new ConcurrentHashMap<>();
 
@@ -50,9 +55,18 @@ public class ChatController {
             produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> testDb() {
-        DataBase db = new DataBase();
+        String msg = "";
 
-        return ResponseEntity.ok(db.getMsg());
+        DatabaseConfig config = new DatabaseConfig(jdbcTemplate);
+        try {
+            for (String customer : config.getCustomers()) {
+                msg += customer + " ";
+            }
+        } catch (Exception e) {
+            msg = e.getMessage();
+        }
+
+        return ResponseEntity.ok(msg);
     }
 
 
