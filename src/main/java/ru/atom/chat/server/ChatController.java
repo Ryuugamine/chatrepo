@@ -1,27 +1,32 @@
 package ru.atom.chat.server;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import ru.atom.chat.db.DatabaseConfig;
+import ru.atom.chat.models.User;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 
-@Controller
+@RestController
 @RequestMapping("chat")
 public class ChatController {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     private List<String> messages = new ArrayList<>();
     private Map<String, String> usersOnline = new ConcurrentHashMap<>();
+    private DatabaseConfig config;
 
     /**
      * curl -X POST -i localhost:8080/chat/login -d "name=I_AM_STUPID"
@@ -45,6 +50,30 @@ public class ChatController {
         messages.add("[" + name + "] logged in");
         return ResponseEntity.ok().build();
     }
+
+    @RequestMapping(
+            path = "test_db_creation",
+            method = RequestMethod.GET,
+            produces = MediaType.TEXT_PLAIN_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<String> testDb() {
+        if (config == null) {
+            config = new DatabaseConfig(jdbcTemplate);
+        }
+
+        String msg = "";
+        try {
+            config.addNewUser(new User(0, "Ryuu", "amahasla", true));
+            config.getOnlineList();
+            msg += "success";
+
+        } catch (Exception e) {
+            msg = e.getMessage();
+        }
+
+        return ResponseEntity.ok(msg);
+    }
+
 
     /**
      * curl -i localhost:8080/chat/online_list
