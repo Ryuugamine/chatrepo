@@ -26,14 +26,14 @@ public class DatabaseConfig {
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS users(" +
                 "id SERIAL, nickname VARCHAR(255), password VARCHAR(255), online BIT)");
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS messages(" +
-                "id SERIAL, from VARCHAR(255), message TEXT, time BIGINT)");
+                "id SERIAL, sender VARCHAR(255), message TEXT, time BIGINT)");
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS private_chats(" +
-                "id SERIAL, from VARCHAR(255), to VARCHAR(255), message TEXT, time BIGINT)");
+                "id SERIAL, sender VARCHAR(255), to_user VARCHAR(255), message TEXT, time BIGINT)");
     }
 
     public boolean addNewUser(User user) {
         try {
-            jdbcTemplate.update("INSERT INTO users(first_name, last_name) VALUES (?,?,?)",
+            jdbcTemplate.update("INSERT INTO users(nickname, password, online) VALUES (?,?,?)",
                     new Object[] {user.getNickname(), user.getPassword(), "0"});
             return true;
         } catch (Exception e) {

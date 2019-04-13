@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 import ru.atom.chat.db.DatabaseConfig;
+import ru.atom.chat.models.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ public class ChatController {
     private JdbcTemplate jdbcTemplate;
     private List<String> messages = new ArrayList<>();
     private Map<String, String> usersOnline = new ConcurrentHashMap<>();
+    private DatabaseConfig config;
 
     /**
      * curl -X POST -i localhost:8080/chat/login -d "name=I_AM_STUPID"
@@ -55,13 +57,16 @@ public class ChatController {
             produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> testDb() {
+        if (config == null) {
+            config = new DatabaseConfig(jdbcTemplate);
+        }
+
         String msg = "";
 
-        DatabaseConfig config = new DatabaseConfig(jdbcTemplate);
         try {
-//            for (String customer : config.getCustomers()) {
-//                msg += customer + " ";
-//            }
+            config.addNewUser(new User(0, "Ryuu", "amahasla", false));
+            msg += "success";
+
         } catch (Exception e) {
             msg = e.getMessage();
         }
