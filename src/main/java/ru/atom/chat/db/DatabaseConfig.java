@@ -1,16 +1,11 @@
 package ru.atom.chat.db;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 import ru.atom.chat.models.User;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 
 public class DatabaseConfig {
@@ -32,24 +27,43 @@ public class DatabaseConfig {
     }
 
     public boolean addNewUser(User user) {
-        try {
-            jdbcTemplate.update("INSERT INTO users(nickname, password, online) VALUES (?,?,?)",
-                    new Object[] {user.getNickname(), user.getPassword(), "0"});
-            return true;
-        } catch (Exception e) {
+        SqlRowSet usersSet = jdbcTemplate.queryForRowSet(
+                "select * from users where nickname = ?", new Object[] { user.getNickname() });
+
+        if(usersSet.first()){
             return false;
+        } else {
+            jdbcTemplate.update("INSERT INTO users(nickname, password, online) VALUES (?,?,?)",
+                    new Object[]{user.getNickname(), user.getPassword(), "true"});
+            return true;
         }
     }
 
     public User login(String nick, String password){
-        return jdbcTemplate.queryForObject(
-                "select * from users where nickname = ? AND password = ?", new Object[] { nick, password },
-                new RowMapper<User>() {
-                    @Override
-                    public User mapRow(ResultSet rs, int rowNum) throws SQLException {
-                        return new User(rs.getInt("id"),  rs.getString("nickname"),
-                                rs.getString("password"), rs.getBoolean("online"));
-                    }
-                });
+        SqlRowSet usersSet = jdbcTemplate.queryForRowSet(
+                "select * from users where nickname = ? AND password = ?", new Object[] { nick, password });
+
+        if(usersSet.first()) {
+           return new User(usersSet.getInt("id"), usersSet.getString("nickname"),
+                    usersSet.getString("password"), usersSet.getBoolean("online"));
+        } else {
+            return null;
+        }
+    }
+
+    public List<User> getOnlineList(){
+        SqlRowSet usersSet = jdbcTemplate.queryForRowSet(
+                "select * from users where online = ?", new Object[] { "true" });
+
+        if(usersSet.first()) {
+            List<User> users = new ArrayList<>();
+            do {
+                users.add(new User(usersSet.getInt("id"), usersSet.getString("nickname"),
+                        usersSet.getString("password"), usersSet.getBoolean("online")));
+            } while (usersSet.next());
+            return users;
+        }
+
+        return null;
     }
 }

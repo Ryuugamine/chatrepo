@@ -62,9 +62,9 @@ public class ChatController {
         }
 
         String msg = "";
-
         try {
-            config.addNewUser(new User(0, "Ryuu", "amahasla", false));
+            config.addNewUser(new User(0, "Ryuu", "amahasla", true));
+            config.getOnlineList();
             msg += "success";
 
         } catch (Exception e) {
