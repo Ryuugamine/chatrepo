@@ -59,9 +59,9 @@ public class ChatController {
 
         DatabaseConfig config = new DatabaseConfig(jdbcTemplate);
         try {
-            for (String customer : config.getCustomers()) {
-                msg += customer + " ";
-            }
+//            for (String customer : config.getCustomers()) {
+//                msg += customer + " ";
+//            }
         } catch (Exception e) {
             msg = e.getMessage();
         }

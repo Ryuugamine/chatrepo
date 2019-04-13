@@ -2,6 +2,7 @@ package ru.atom.chat.db;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import ru.atom.chat.models.User;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,38 +15,41 @@ import java.util.stream.Collectors;
 
 public class DatabaseConfig {
 
-    private List<String> customers;
-
+    JdbcTemplate jdbcTemplate;
     public DatabaseConfig(JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("DROP TABLE customers IF EXISTS");
-        jdbcTemplate.execute("CREATE TABLE customers(" +
-                "id SERIAL, first_name VARCHAR(255), last_name VARCHAR(255))");
+        this.jdbcTemplate = jdbcTemplate;
 
-        List<Object[]> splitUpNames = Arrays.asList("John Woo", "Jeff Dean", "Josh Bloch", "Josh Long").stream()
-                .map(name -> name.split(" "))
-                .collect(Collectors.toList());
+        initDatabase();
+    }
 
-        jdbcTemplate.batchUpdate("INSERT INTO customers(first_name, last_name) VALUES (?,?)", splitUpNames);
+    private void initDatabase() {
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS users(" +
+                "id SERIAL, nickname VARCHAR(255), password VARCHAR(255), online BIT)");
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS messages(" +
+                "id SERIAL, from VARCHAR(255), message TEXT, time BIGINT)");
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS private_chats(" +
+                "id SERIAL, from VARCHAR(255), to VARCHAR(255), message TEXT, time BIGINT)");
+    }
 
-        List<String> results = jdbcTemplate.query(
-                "select * from customers where first_name = ?", new Object[] { "Josh" },
-                new RowMapper<String>() {
+    public boolean addNewUser(User user) {
+        try {
+            jdbcTemplate.update("INSERT INTO users(first_name, last_name) VALUES (?,?,?)",
+                    new Object[] {user.getNickname(), user.getPassword(), "0"});
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public User login(String nick, String password){
+        return jdbcTemplate.queryForObject(
+                "select * from users where nickname = ? AND password = ?", new Object[] { nick, password },
+                new RowMapper<User>() {
                     @Override
-                    public String mapRow(ResultSet rs, int rowNum) throws SQLException {
-                        return new String(rs.getLong("id") + rs.getString("first_name") +
-                                rs.getString("last_name"));
+                    public User mapRow(ResultSet rs, int rowNum) throws SQLException {
+                        return new User(rs.getInt("id"),  rs.getString("nickname"),
+                                rs.getString("password"), rs.getBoolean("online"));
                     }
                 });
-
-
-        setCustomers(results);
-    }
-
-    public List<String> getCustomers() {
-        return customers;
-    }
-
-    public void setCustomers(List<String> customers) {
-        this.customers = customers;
     }
 }
