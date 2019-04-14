@@ -5,11 +5,13 @@ public class Message {
     private int id;
     private String from;
     private String message;
+    private long time;
 
-    public Message(int id, String from, String message) {
+    public Message(int id, String from, String message, long time) {
         this.id = id;
         this.from = from;
         this.message = message;
+        this.time = time;
     }
 
     public String getFrom() {
@@ -30,5 +32,13 @@ public class Message {
 
     public int getId() {
         return id;
+    }
+
+    public long getTime() {
+        return time;
+    }
+
+    public void setTime(long time) {
+        this.time = time;
     }
 }
