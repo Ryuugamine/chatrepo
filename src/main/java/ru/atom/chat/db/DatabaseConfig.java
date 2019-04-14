@@ -110,11 +110,13 @@ public class DatabaseConfig {
         }
     }
 
+
     public boolean addNewMessage(Message msg) {
         jdbcTemplate.update("INSERT INTO messages(sender, message, time) VALUES (?,?,?)",
                 new Object[]{msg.getFrom(), msg.getMessage(), msg.getTime()});
         return true;
     }
+
 
     public List<PrivateMessage> getPrivateChatHistory(String user1, String user2) {
         SqlRowSet messageSet = jdbcTemplate.queryForRowSet(

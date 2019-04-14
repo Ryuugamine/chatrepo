@@ -12,11 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 import ru.atom.chat.db.DatabaseConfig;
 import ru.atom.chat.models.User;
+import ru.atom.chat.models.Message;
+import ru.atom.chat.models.PrivateMessage;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import java.util.Date;
 
 @RestController
 @RequestMapping("chat")
@@ -26,6 +30,8 @@ public class ChatController {
     private JdbcTemplate jdbcTemplate;
     private List<String> messages = new ArrayList<>();
     private Map<String, String> usersOnline = new ConcurrentHashMap<>();
+    private int userIDcout = 0;
+    private int msgIDcout = 0;
     private DatabaseConfig config;
 
     /**
@@ -36,42 +42,74 @@ public class ChatController {
             method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<String> login(@RequestParam("name") String name) {
-        if (name.length() < 1) {
-            return ResponseEntity.badRequest().body("Too short name, sorry :(");
+    public ResponseEntity<String> login(@RequestParam("nick") String nick, @RequestParam("password") String password) {
+
+        if (!config.login(nick, password).isOnline()) {
+
+            config.login(nick, password);
+
+            Date date = new Date();
+            long time = date.getTime();
+
+            msgIDcout++;
+            Message msg = new Message(msgIDcout, "System", nick + " online", time);
+            config.addNewMessage(msg);
+
+            return ResponseEntity.ok().build();
         }
-        if (name.length() > 20) {
-            return ResponseEntity.badRequest().body("Too long name, sorry :(");
-        }
-        if (usersOnline.containsKey(name)) {
-            return ResponseEntity.badRequest().body("Already logged in:(");
-        }
-        usersOnline.put(name, name);
-        messages.add("[" + name + "] logged in");
-        return ResponseEntity.ok().build();
+        else return ResponseEntity.badRequest().body("error");
+
     }
 
     @RequestMapping(
             path = "test_db_creation",
-            method = RequestMethod.GET,
-            produces = MediaType.TEXT_PLAIN_VALUE)
+            method = RequestMethod.GET)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<String> testDb() {
+    public List<User> testDb() {
+        List<User> resp = new ArrayList<>();
         if (config == null) {
             config = new DatabaseConfig(jdbcTemplate);
         }
 
         String msg = "";
         try {
-            config.addNewUser(new User(0, "Ryuu", "amahasla", true));
-            config.getOnlineList();
+            config.addNewUser(new User(0, "System", "adminadmin", true));
+            resp = config.getOnlineList();
             msg += "success";
 
         } catch (Exception e) {
             msg = e.getMessage();
         }
 
-        return ResponseEntity.ok(msg);
+        return resp;
+    }
+
+
+    @RequestMapping(
+            path = "add_new_user",
+            method = RequestMethod.POST,
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<String> addNewUser(@RequestParam("nick") String nick, @RequestParam("password") String password) {
+        String msg2 = "";
+        try {
+            userIDcout++;
+            config.addNewUser(new User(userIDcout, nick, password, true));
+
+            Date date = new Date();
+            long time = date.getTime();
+
+            msgIDcout++;
+            Message msg = new Message(msgIDcout, "System", nick + " online", time);
+            config.addNewMessage(msg);
+
+            msg2 += "success";
+
+        } catch (Exception e) {
+            msg2 = e.getMessage();
+        }
+
+        return ResponseEntity.ok().build();
     }
 
 
@@ -80,30 +118,52 @@ public class ChatController {
      */
     @RequestMapping(
             path = "online_list",
-            method = RequestMethod.GET,
-            produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity onlineList() {
-        String responseBody = String.join("\n", usersOnline.keySet());
-        return ResponseEntity.ok(responseBody);
+            method = RequestMethod.GET)
+    @ResponseStatus(HttpStatus.OK)
+    public List<User> onlineList() {
+        List<User> resp = new ArrayList<>();
+
+        String msg = "";
+        try {
+            resp = config.getOnlineList();
+            msg += "success";
+
+        } catch (Exception e) {
+            msg = e.getMessage();
+        }
+
+        return resp;
     }
 
     /**
      * curl -X POST -i localhost:8080/chat/say -d "name=I_AM_STUPID&text=Hello everyone in this chat"
      */
-
     @RequestMapping(
             path = "say",
             method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<String> say(@RequestParam("name") String name, @RequestParam("text") String text) {
-        if (!usersOnline.containsKey(name)) {
-            return ResponseEntity.badRequest().body("User [" + name + "] not logged in");
-        }
-        messages.add("[" + name + "]: " + text);
-
+    public ResponseEntity<String> say(@RequestParam("name") String name, @RequestParam("text") String text, @RequestParam("time") long time) {
+        msgIDcout++;
+        Message msg = new Message(msgIDcout, name, text, time);
+        config.addNewMessage(msg);
         return ResponseEntity.ok().build();
     }
+
+
+    @RequestMapping(
+            path = "private_say",
+            method = RequestMethod.POST,
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<String> privateSay(@RequestParam("nameFrom") String nameFrom, @RequestParam("nameTo") String nameTo,
+                                             @RequestParam("text") String text, @RequestParam("time") long time) {
+        msgIDcout++;
+        PrivateMessage msg = new PrivateMessage(msgIDcout, nameFrom, nameTo, text, time);
+        config.addNewPrivateMessage(msg);
+        return ResponseEntity.ok().build();
+    }
+
 
     /**
      * curl -X POST -i localhost:8080/chat/logout -d "name=I_AM_STUPID"
@@ -113,12 +173,8 @@ public class ChatController {
             path = "logout",
             method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<String> logout(@RequestParam("name") String name) {
-        if (!usersOnline.containsKey(name)) {
-            return ResponseEntity.badRequest().body("User [" + name + "] not logged in");
-        }
-        usersOnline.remove(name, name);
-        messages.add("[" + name + "] logged out");
+    public ResponseEntity<String> logout(@RequestParam("id") int id) {
+        config.logout(id);
         return ResponseEntity.ok().build();
     }
 
@@ -127,57 +183,30 @@ public class ChatController {
      */
     @RequestMapping(
             path = "chat",
-            method = RequestMethod.GET,
-            produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity chat() {
-        String responseBody = String.join("\n", messages);
-        return ResponseEntity.ok(responseBody);
+            method = RequestMethod.GET)
+    public List<Message> chat() {
+        List<Message> resp = new ArrayList<>();
+        resp = config.getChatHistory();
+        return resp;
     }
 
-    /**
-     * curl -i localhost:8080/chat/messages_count
-     */
-    @RequestMapping(
-            path = "messages_count",
-            method = RequestMethod.GET,
-            produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity messagesCount() {
-        String responseBody = String.valueOf(messages.size());
-        return ResponseEntity.ok(responseBody);
-    }
-
-    /**
-     * curl -X POST -i localhost:8080/chat/rename -d "name=I_AM_STUPID&newname=IAMSTUPID"
-     */
 
     @RequestMapping(
-            path = "rename",
-            method = RequestMethod.POST,
-            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<String> rename(@RequestParam("name") String name, @RequestParam("newname") String newName) {
-        if (!usersOnline.containsKey(name)) {
-            return ResponseEntity.badRequest().body("User [" + name + "] not logged in");
-        }
-        usersOnline.remove(name, name);
-        usersOnline.put(newName, newName);
-
-        messages.add("[" + name + "] rename to [" + newName + "]");
-        return ResponseEntity.ok().build();
+            path = "private_chat",
+            method = RequestMethod.GET)
+    public List<PrivateMessage> privateChat(@RequestParam("name1") String name1, @RequestParam("name2") String name2) {
+        List<PrivateMessage> resp = new ArrayList<>();
+        resp = config.getPrivateChatHistory(name1, name2);
+        return resp;
     }
 
-
-    /**
-     * curl -X POST -i localhost:8080/chat/clear -d "name=I_AM_STUPID"
-     */
     @RequestMapping(
-            path = "clear",
-            method = RequestMethod.POST,
-            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<String> clear(@RequestParam("name") String name) {
-        if (!usersOnline.containsKey(name)) {
-            return ResponseEntity.badRequest().body("User [" + name + "] not logged in");
-        }
-        messages.clear();
-        return ResponseEntity.ok().build();
+            path = "getMessagesFromCurrentUser",
+            method = RequestMethod.GET)
+    public List<Message> getMessagesFromCurrentUser(@RequestParam("name1") String name) {
+        List<Message> resp = new ArrayList<>();
+        resp = config.getMessagesFromCurrentUser(name);
+        return resp;
     }
+
 }
