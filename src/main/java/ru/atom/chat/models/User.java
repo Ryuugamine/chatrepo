@@ -7,6 +7,12 @@ public class User {
     private String password;
     private boolean online;
 
+    public User(String nickname, String password, boolean online) {
+        this.nickname = nickname;
+        this.password = password;
+        this.online = online;
+    }
+
     public User(int id, String nickname, String password, boolean online) {
         this.id = id;
         this.nickname = nickname;

@@ -14,6 +14,7 @@ import ru.atom.chat.db.DatabaseConfig;
 import ru.atom.chat.models.User;
 import ru.atom.chat.models.Message;
 import ru.atom.chat.models.PrivateMessage;
+import ru.atom.chat.models.UserResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,11 +43,10 @@ public class ChatController {
             method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<String> login(@RequestParam("nick") String nick, @RequestParam("password") String password) {
-
-        if (!config.login(nick, password).isOnline()) {
-
-            config.login(nick, password);
+    public UserResponse login(@RequestParam("nick") String nick, @RequestParam("password") String password) {
+        UserResponse resp = new UserResponse();
+        resp.setUser(config.login(nick, password));
+        if (resp.getUser() != null) {
 
             Date date = new Date();
             long time = date.getTime();
@@ -55,9 +55,12 @@ public class ChatController {
             Message msg = new Message(msgIDcout, "System", nick + " online", time);
             config.addNewMessage(msg);
 
-            return ResponseEntity.ok().build();
+            resp.setMessage("success");
+            return resp;
+        } else {
+            resp.setMessage("Wrong login or password");
+            return resp;
         }
-        else return ResponseEntity.badRequest().body("error");
 
     }
 
@@ -90,26 +93,26 @@ public class ChatController {
             method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<String> addNewUser(@RequestParam("nick") String nick, @RequestParam("password") String password) {
+    public ResponseEntity<String> addNewUser(@RequestParam("nick") String nick,
+                                             @RequestParam("password") String password) {
         String msg2 = "";
         try {
-            userIDcout++;
-            config.addNewUser(new User(userIDcout, nick, password, true));
+            if (config.addNewUser(new User(nick, password, true))) {
+                Date date = new Date();
+                long time = date.getTime();
 
-            Date date = new Date();
-            long time = date.getTime();
-
-            msgIDcout++;
-            Message msg = new Message(msgIDcout, "System", nick + " online", time);
-            config.addNewMessage(msg);
-
-            msg2 += "success";
-
+                msgIDcout++;
+                Message msg = new Message(msgIDcout, "System", nick + " online", time);
+                config.addNewMessage(msg);
+                msg2 += "success";
+            } else {
+                msg2 += "User with such nick already exists";
+            }
         } catch (Exception e) {
             msg2 = e.getMessage();
         }
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body(msg2);
     }
 
 
@@ -143,7 +146,8 @@ public class ChatController {
             method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<String> say(@RequestParam("name") String name, @RequestParam("text") String text, @RequestParam("time") long time) {
+    public ResponseEntity<String> say(@RequestParam("name") String name,
+                                      @RequestParam("text") String text, @RequestParam("time") long time) {
         msgIDcout++;
         Message msg = new Message(msgIDcout, name, text, time);
         config.addNewMessage(msg);
@@ -156,8 +160,10 @@ public class ChatController {
             method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<String> privateSay(@RequestParam("nameFrom") String nameFrom, @RequestParam("nameTo") String nameTo,
-                                             @RequestParam("text") String text, @RequestParam("time") long time) {
+    public ResponseEntity<String> privateSay(@RequestParam("nameFrom") String nameFrom,
+                                             @RequestParam("nameTo") String nameTo,
+                                             @RequestParam("text") String text,
+                                             @RequestParam("time") long time) {
         msgIDcout++;
         PrivateMessage msg = new PrivateMessage(msgIDcout, nameFrom, nameTo, text, time);
         config.addNewPrivateMessage(msg);
@@ -185,9 +191,7 @@ public class ChatController {
             path = "chat",
             method = RequestMethod.GET)
     public List<Message> chat() {
-        List<Message> resp = new ArrayList<>();
-        resp = config.getChatHistory();
-        return resp;
+        return config.getChatHistory();
     }
 
 
@@ -195,18 +199,14 @@ public class ChatController {
             path = "private_chat",
             method = RequestMethod.GET)
     public List<PrivateMessage> privateChat(@RequestParam("name1") String name1, @RequestParam("name2") String name2) {
-        List<PrivateMessage> resp = new ArrayList<>();
-        resp = config.getPrivateChatHistory(name1, name2);
-        return resp;
+        return config.getPrivateChatHistory(name1, name2);
     }
 
     @RequestMapping(
             path = "getMessagesFromCurrentUser",
             method = RequestMethod.GET)
     public List<Message> getMessagesFromCurrentUser(@RequestParam("name1") String name) {
-        List<Message> resp = new ArrayList<>();
-        resp = config.getMessagesFromCurrentUser(name);
-        return resp;
+        return config.getMessagesFromCurrentUser(name);
     }
 
 }
