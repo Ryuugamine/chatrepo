@@ -197,14 +197,16 @@ public class ChatController {
 
     @RequestMapping(
             path = "private_chat",
-            method = RequestMethod.GET)
+            method = RequestMethod.POST,
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public List<PrivateMessage> privateChat(@RequestParam("name1") String name1, @RequestParam("name2") String name2) {
         return config.getPrivateChatHistory(name1, name2);
     }
 
     @RequestMapping(
             path = "getMessagesFromCurrentUser",
-            method = RequestMethod.GET)
+            method = RequestMethod.POST,
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public List<Message> getMessagesFromCurrentUser(@RequestParam("name1") String name) {
         return config.getMessagesFromCurrentUser(name);
     }
