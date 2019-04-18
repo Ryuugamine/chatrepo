@@ -16,6 +16,7 @@ import ru.atom.chat.models.Message;
 import ru.atom.chat.models.PrivateMessage;
 import ru.atom.chat.models.UserResponse;
 
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,13 @@ public class ChatController {
     private int userIDcout = 0;
     private int msgIDcout = 0;
     private DatabaseConfig config;
+
+    @PostConstruct
+    private void init(){
+        if (config == null) {
+            config = new DatabaseConfig(jdbcTemplate);
+        }
+    }
 
     /**
      * curl -X POST -i localhost:8080/chat/login -d "name=I_AM_STUPID"
@@ -63,30 +71,6 @@ public class ChatController {
         }
 
     }
-
-    @RequestMapping(
-            path = "test_db_creation",
-            method = RequestMethod.GET)
-    @ResponseStatus(HttpStatus.OK)
-    public List<User> testDb() {
-        List<User> resp = new ArrayList<>();
-        if (config == null) {
-            config = new DatabaseConfig(jdbcTemplate);
-        }
-
-        String msg = "";
-        try {
-            config.addNewUser(new User(0, "System", "adminadmin", true));
-            resp = config.getOnlineList();
-            msg += "success";
-
-        } catch (Exception e) {
-            msg = e.getMessage();
-        }
-
-        return resp;
-    }
-
 
     @RequestMapping(
             path = "add_new_user",
