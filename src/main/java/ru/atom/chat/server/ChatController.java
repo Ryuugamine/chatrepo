@@ -37,7 +37,7 @@ public class ChatController {
     private DatabaseConfig config;
 
     @PostConstruct
-    private void init(){
+    private void init() {
         if (config == null) {
             config = new DatabaseConfig(jdbcTemplate);
         }
